@@ -1,0 +1,151 @@
+/* ==================== Reset & global ==================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body, html {
+  height: 100%;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* =========== Contenedor principal =========== */
+.registro-wrapper {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* =========== Panel izquierdo =========== */
+.left-panel {
+  flex: 1;
+  background-color: #000;          /* negro */
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+}
+.left-panel .logo-circle {
+  background-color: #fff;          /* círculo blanco */
+  border-radius: 50%;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+.left-panel .logo-circle img {
+  max-width: 100px;
+}
+.left-panel h1 {
+  font-size: 2rem;
+  margin-bottom: 15px;
+}
+.left-panel p {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+/* =========== Panel derecho =========== */
+.right-panel {
+  flex: 1;
+  background-color: #fff;         /* blanco */
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+.form-container {
+  width: 100%;
+  max-width: 380px;
+}
+.form-container h2 {
+  color: #b41313;                  /* rojo AutoFinder */
+  margin-bottom: 25px;
+  font-size: 1.8rem;
+  text-align: center;
+}
+
+/* =========== Inputs =========== */
+.form-container input[type="text"],
+.form-container input[type="email"],
+.form-container input[type="password"],
+.form-container input[type="tel"] {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 20px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #333;
+}
+
+/* =========== Checkbox =========== */
+.terms-group {
+  margin-bottom: 20px;
+}
+.terms-group label {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 10px;
+}
+.terms-group input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+/* =========== Botón =========== */
+.form-container button {
+  width: 100%;
+  padding: 12px;
+  background-color: #b41313;      /* rojo AutoFinder */
+  color: #fff;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color .3s;
+}
+.form-container button:hover {
+  background-color: #961010;
+}
+
+/* =========== Responsive =========== */
+@media (max-width: 768px) {
+  .registro-wrapper {
+    flex-direction: column;
+  }
+  .left-panel, .right-panel {
+    flex: none;
+    width: 100%;
+  }
+  .left-panel, .right-panel {
+    padding: 20px;
+  }
+}
+
+/* ====== Estilos para el Toast ====== */
+#toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #28a745;       /* verde agradable */
+  color: #fff;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  z-index: 2000;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
