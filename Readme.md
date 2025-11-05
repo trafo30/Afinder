@@ -9,7 +9,7 @@ Para iniciar el proyecto necesita un servidor de aplicaciones apache con soporte
 ingresar a su direccion local:
 
 ```bash
-  http://localhost/autofinder/Public
+  http://localhost/autofinder/afinder/Public
   
 ```
 

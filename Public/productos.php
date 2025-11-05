@@ -17,7 +17,7 @@ $endpoints = [
 ];
 
 $cat = $_GET['cat'] ?? 'llantas';
-$apiUrl = $endpoints[$cat] ?? $endpoints['llantas'];
+$apiUrl = "http://127.0.0.1:8000/categoria/{$cat}";
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -37,7 +37,10 @@ $apiUrl = $endpoints[$cat] ?? $endpoints['llantas'];
     <img src="imgs/logo.png" alt="AutoFinder Logo">
   </a>
 </div>
-  <input type="text" placeholder="Buscar productos...">
+<form class="search" action="productos.php" method="get">
+  <input type="hidden" name="cat" value="<?= htmlspecialchars($cat) ?>">
+  <input type="text" name="q" placeholder="Buscar productos..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
+</form>
   <div class="icons">
     <div class="icon-item"><img src="imgs/corazon1.png" alt="Favoritos"><span>Favoritos</span></div>
     <div class="icon-item"><img src="imgs/carrito-de-compras.png" alt="Carrito"><span>Carrito</span></div>
@@ -92,7 +95,11 @@ $apiUrl = $endpoints[$cat] ?? $endpoints['llantas'];
 <script>
 window.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('productContainer');
-  fetch("<?= $apiUrl ?>")
+  const params = new URLSearchParams(location.search);
+  const q = (params.get('q') || '').trim();
+  const url = new URL("<?= $apiUrl ?>");
+  if (q) url.searchParams.set('q', q);
+  fetch(url.toString())
     .then(res => res.json())
     .then(data => {
       if (data.bstatus && data.odata.length > 0) {
