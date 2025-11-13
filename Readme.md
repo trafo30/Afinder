@@ -21,11 +21,13 @@ Para iniciar el proyecto hecho en python debe seguir los siguientes pasos ubicad
 
 ### Creando el entorno
 ```bash
-  python3 -m venv .venv
+  python-m venv .venv
 ```
 ### Instalando dependencias
 ```bash
   pip install -r requirements.txt
+
+  .\.venv\Scripts\activate
 ```
 ### Arrancando el proyecto
 ```bash
