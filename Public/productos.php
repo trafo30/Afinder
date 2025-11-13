@@ -97,12 +97,26 @@ window.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('productContainer');
   const params = new URLSearchParams(location.search);
   const q = (params.get('q') || '').trim();
+
   const url = new URL("<?= $apiUrl ?>");
   if (q) url.searchParams.set('q', q);
+
+  console.log("Llamando a API:", url.toString());
+
   fetch(url.toString())
-    .then(res => res.json())
+    .then(res => {
+      console.log("HTTP status:", res.status);
+      if (!res.ok) {
+        throw new Error("HTTP " + res.status);
+      }
+      return res.json();
+    })
     .then(data => {
-      if (data.bstatus && data.odata.length > 0) {
+      console.log("JSON recibido:", data);
+
+      // data = { bstatus, smessage, odata }
+      if (data.bstatus && Array.isArray(data.odata) && data.odata.length > 0) {
+        container.innerHTML = "";
         data.odata.forEach(item => {
           const card = document.createElement('div');
           card.className = 'product-card';
@@ -111,7 +125,7 @@ window.addEventListener('DOMContentLoaded', () => {
             <h3>${item.data_name}</h3>
             <p class="price">S/ ${item.data_best_price}</p>
             <div class="botones-producto">
-              <a href="${item.data_url}" target="_blank" class="btn-comprar">Comprar</a>
+              <a href="#" target="_blank" class="btn-comprar">Comprar</a>
               <a href="#" class="btn-comparar">Comparar</a>
             </div>`;
           container.appendChild(card);
@@ -121,10 +135,11 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     })
     .catch(err => {
-      console.error(err);
+      console.error("Error en fetch o JSON:", err);
       container.innerHTML = "<p>Error al cargar productos.</p>";
     });
 });
 </script>
+
 </body>
 </html>

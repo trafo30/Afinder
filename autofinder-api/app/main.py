@@ -1,27 +1,75 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from .scraper import scrape_promart
-from .models import ApiResponse
+from sqlalchemy import text
 
-app = FastAPI(title="Promart Scraper API")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+from .models import ApiResponse, ProductData
+from .scraper import engine  # engine ya está definido allí
 
-# Mapea tus categorías a URLs reales de Promart
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost",
+        "http://127.0.0.1",
+        "http://localhost:80",
+        "http://127.0.0.1:80",
+    ],  # en desarrollo puedes usar ["*"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mantenemos el diccionario para saber qué categorías son válidas
 CATEGORY_URLS = {
     "llantas": "https://www.promart.pe/automotriz/llantas",
     "baterias": "https://www.promart.pe/herramientas/herramientas-de-mecanica-automotriz/baterias-de-auto",
     "filtros-aceite": "https://www.promart.pe/automotriz/filtros-de-aceite",
-    "focos": "https://www.promart.pe/automotriz/luces-automotrices",      # ajusta si difiere
-    "amortiguadores": "https://www.promart.pe/automotriz/amortiguadores", # ajusta
-    "rotulas": "https://www.promart.pe/automotriz/suspension",            # ajusta
-    "rodamientos": "https://www.promart.pe/automotriz/rodamientos",       # ajusta
-    "filtro-aire": "https://www.promart.pe/automotriz/filtros-de-aire",   # ajusta
-    "espejos": "https://www.promart.pe/automotriz/espejos",               # ajusta
+    "focos": "https://www.promart.pe/automotriz/luces-automotrices",
+    "amortiguadores": "https://www.promart.pe/automotriz/amortiguadores",
+    "rotulas": "https://www.promart.pe/automotriz/suspension",
+    "rodamientos": "https://www.promart.pe/automotriz/rodamientos",
+    "filtro-aire": "https://www.promart.pe/automotriz/filtros-de-aire",
+    "espejos": "https://www.promart.pe/automotriz/espejos",
 }
 
-@app.get("/categoria/{cat}", response_model=ApiResponse)
-async def get_categoria(cat: str, q: str | None = Query(default=None, min_length=2)):
-    url = CATEGORY_URLS.get(cat)
-    if not url:
-        raise HTTPException(status_code=404, detail="Categoría no soportada")
-    return await scrape_promart(url, q)
+
+@app.get("/categoria/{categoria}", response_model=ApiResponse)
+async def get_categoria(categoria: str, q: str | None = None) -> ApiResponse:
+    # Validar que la categoría exista en tu catálogo
+    if categoria not in CATEGORY_URLS:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+
+    cat = categoria.upper()  # debe coincidir con lo que guardaste desde el scraper
+
+    # Leer productos desde MySQL
+    with engine.begin() as conn:
+        params = {"cat": cat}
+        sql = """
+            SELECT nombre, precio, imagen_url
+            FROM productos
+            WHERE categoria = :cat
+        """
+
+        if q:
+            sql += " AND nombre LIKE :q"
+            params["q"] = f"%{q}%"
+
+        rows = conn.execute(text(sql), params).mappings().all()
+
+    # Adaptar filas de BD al modelo ProductData que ya usa tu frontend
+    productos = [
+        ProductData(
+            data_sku="",  # si luego agregas sku a la tabla, lo pones aquí
+            data_name=row["nombre"],
+            data_best_price=str(row["precio"]),
+            data_image=row["imagen_url"],
+        )
+        for row in rows
+    ]
+
+    return ApiResponse(
+        bstatus=True,
+        smessage=f"{len(productos)} registros encontrados",
+        odata=productos,
+    )

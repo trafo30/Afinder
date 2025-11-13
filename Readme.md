@@ -33,3 +33,8 @@ Para iniciar el proyecto hecho en python debe seguir los siguientes pasos ubicad
 ```bash
   python -m uvicorn app.main:app --reload
 ```
+
+### Actualizar productos scraper
+```bash
+  python run_scraper.py
+```
