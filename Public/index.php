@@ -8,7 +8,7 @@ session_start();
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AutoFinder</title>
+  <title>AutoFinder</title>  
   <link rel="stylesheet" href="css/styles.css">
   <script defer src="js/script.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -44,7 +44,6 @@ session_start();
   </div>
 
   <!-- Cabecera -->
-
 <header>
   <div class="logo">
     <img src="imgs/logo.png" alt="AutoFinder Logo">
@@ -52,7 +51,6 @@ session_start();
 
   <form action="productos.php" method="get" class="search">
     <input type="hidden" name="modo" value="busqueda">
-
     <div class="search-box">
       <i class="fa-solid fa-magnifying-glass search-icon"></i>
       <input
@@ -67,32 +65,32 @@ session_start();
     </div>
   </form>
 
-
-
-    <div class="icons">
-      <div class="icon-item">
-        <img src="imgs/corazon1.png" alt="Favoritos">
-        <span>Favoritos</span>
-      </div>
-      <div class="icon-item">
-        <img src="imgs/carrito-de-compras.png" alt="Carrito">
-        <span>Carrito</span>
-      </div>
-
-      <?php if (isset($_SESSION['usuario'])): ?>
-        <!-- Usuario logueado: saludo en dos líneas -->
-        <div class="welcome">
-          <p>Bienvenido</p>
-          <p><strong><?= htmlspecialchars($_SESSION['nombre']) ?></strong></p>
-        </div>
-        <!-- Botón Salir más ancho -->
-        <a href="logout.php" class="login-button btn-salir">Salir</a>
-      <?php else: ?>
-        <!-- Usuario no logueado -->
-        <button class="login-button">Ingresar</button>
-      <?php endif; ?>
+  <div class="icons">
+    <!-- Favoritos -->
+    <div class="icon-item">
+      <img src="imgs/corazon1.png" alt="Favoritos">
+      <span>Favoritos</span>
     </div>
-  </header>
+
+    <!-- Carrito -->
+    <div class="icon-item cart-icon" onclick="window.location.href='carrito.php'">
+      <img src="imgs/carrito-de-compras.png" alt="Carrito">
+      <span id="cart-count" class="cart-count">0</span>
+      <span>Carrito</span>
+    </div>
+
+    <!-- Login / Usuario -->
+    <?php if (isset($_SESSION['usuario'])): ?>
+      <div class="welcome">
+        <p>Bienvenido</p>
+        <p><strong><?= htmlspecialchars($_SESSION['nombre']) ?></strong></p>
+      </div>
+      <a href="logout.php" class="login-button btn-salir">Salir</a>
+    <?php else: ?>
+      <button class="login-button">Ingresar</button>
+    <?php endif; ?>
+  </div>
+</header>
 
     <!-- Filtro -->
     <div class="main">
@@ -355,6 +353,41 @@ session_start();
             <p>&copy; Copyright Universidad Tecnologica del Perú - 2025. Todos los derechos reservados</p>
         </div>
     </footer>
+<script>
+  const CART_KEY = 'afinder_cart';   // MISMA clave que en productos.php y carrito.php
+
+  function updateCartBadge() {
+    const badge = document.getElementById('cart-count');
+    if (!badge) return;
+
+    let count = 0;
+
+    try {
+      const raw = localStorage.getItem(CART_KEY);
+      if (raw) {
+        const cart = JSON.parse(raw);
+        if (Array.isArray(cart)) {
+          // suma cantidades (qty), no solo número de filas
+          count = cart.reduce((acc, item) => acc + (item.qty || 1), 0);
+        }
+      }
+    } catch (e) {
+      console.error('Error leyendo carrito:', e);
+    }
+
+    badge.textContent = count;
+  }
+
+  // Actualizar al cargar la página
+  document.addEventListener('DOMContentLoaded', updateCartBadge);
+
+  // Opcional: si abres en otra pestaña y cambias el carrito
+  window.addEventListener('storage', (ev) => {
+    if (ev.key === CART_KEY) {
+      updateCartBadge();
+    }
+  });
+</script>
 </body>
 
 </html>

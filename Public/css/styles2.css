@@ -268,44 +268,129 @@ header input[type="text"] {
     background-color: #e72e2e;
 }
 
-
-/* ESTRELLAS */
-
-.rating {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    margin-top: 5px;
-    font-size: 20px;
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 20px;
 }
 
-.star {
-    color: #ffd700;
-    /* Amarillo dorado */
+/* Tarjeta */
+.product-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  padding: 14px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
-.star.half {
-    position: relative;
-    display: inline-block;
-    overflow: hidden;
-    width: 8px;
-    /* solo media estrella visible */
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.10);
 }
 
-.star.half::before {
-    content: '\2605';
-    color: #ccc;
-    position: absolute;
-    left: 0;
-    width: 16px;
-    overflow: hidden;
+/* Imagen del producto */
+.product-card img {
+  width: 100%;
+  height: 170px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #f8f8f8;
 }
 
-.reviews {
-    color: #888;
-    font-size: 14px;
-    margin-left: 4px;
+/* Título y precio */
+.product-card h3 {
+  font-size: 14px;
+  margin: 10px 0 6px;
+  min-height: 36px;
+  font-weight: 600;
+}
+
+.product-card .price {
+  font-size: 16px;
+  font-weight: 700;
+  color: #d81e28;
+  margin-bottom: 10px;
+}
+
+/* Contenedor botones */
+.botones-producto {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+/* Botones */
+.btn-comprar,
+.btn-comparar {
+  flex: 1;
+  text-align: center;
+  text-decoration: none;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color .18s ease, color .18s ease, border-color .18s ease;
+}
+
+.btn-comprar {
+  background: #d81e28;
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-comprar:hover {
+  background: #b51820;
+}
+
+.btn-comparar {
+  background: #fff;
+  color: #333;
+  border-color: #e1e1e1;
+}
+
+.btn-comparar:hover {
+  background: #f3f3f3;
+}
+
+/* Carrito en header */
+.carrito-icon {
+  position: relative;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #d81e28;
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: 11px;
+  min-width: 18px;
+  text-align: center;
+}.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: #111827;
+  color: #f9fafb;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+  z-index: 9999;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Footer */

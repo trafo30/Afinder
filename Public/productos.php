@@ -26,7 +26,7 @@ if ($modo === 'busqueda') {
   <script defer src="js/comparar.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-
+<div id="toast" class="toast"></div>
 <body>
 <header>
   <div class="logo">
@@ -55,7 +55,14 @@ if ($modo === 'busqueda') {
 </form>
   <div class="icons">
     <div class="icon-item"><img src="imgs/corazon1.png" alt="Favoritos"><span>Favoritos</span></div>
-    <div class="icon-item"><img src="imgs/carrito-de-compras.png" alt="Carrito"><span>Carrito</span></div>
+
+<a href="carrito.php" class="icon-item carrito-icon" style="text-decoration:none;">
+      <img src="imgs/carrito-de-compras.png" alt="Carrito">
+      <span>Carrito</span>
+      <span id="cart-count" class="cart-badge">0</span>
+    </a>
+
+        
     <?php if (isset($_SESSION['usuario'])): ?>
       <div class="welcome">
         <p>Bienvenido</p>
@@ -190,11 +197,20 @@ window.addEventListener('DOMContentLoaded', () => {
             <h3>${item.data_name}</h3>
             <p class="price">S/ ${item.data_best_price}</p>
             <div class="botones-producto">
-              <a href="#" target="_blank" class="btn-comprar">Comprar</a>
+              <a href="#"
+                class="btn-comprar"
+                data-sku="${item.data_sku || ''}"
+                data-name="${item.data_name}"
+                data-price="${item.data_best_price}"
+                data-image="${item.data_image}">
+                Comprar
+              </a>
               <a href="#" class="btn-comparar">Comparar</a>
             </div>`;
           container.appendChild(card);
         });
+
+        attachBuyButtons();
       } else {
         container.innerHTML = "<p>No se encontraron productos.</p>";
       }
@@ -204,6 +220,73 @@ window.addEventListener('DOMContentLoaded', () => {
       container.innerHTML = "<p>Error al cargar productos.</p>";
     });
 });
+// --- Toast reutilizable ---
+function showToast(message) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = message;
+  t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(() => {
+    t.classList.remove('show');
+  }, 1800);
+}
+
+// --- Carrito en localStorage (solo para contar y guardar productos) ---
+const CART_KEY = 'afinder_cart';
+
+function getCart() {
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCart(cart) {
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+  updateCartBadge();
+}
+
+function updateCartBadge() {
+  const cart = getCart();
+  const count = cart.reduce((acc, item) => acc + item.qty, 0);
+  const badge = document.getElementById('cart-count');
+  if (badge) badge.textContent = count;
+}
+
+function addToCart(product) {
+  const cart = getCart();
+  const index = cart.findIndex(p => p.sku === product.sku && p.sku !== '');
+
+  if (index >= 0) {
+    cart[index].qty += 1;
+  } else {
+    cart.push({ ...product, qty: 1 });
+  }
+  saveCart(cart);
+  showToast('Producto agregado al carrito');
+}
+
+// Al cargar la página, refrescar badge
+updateCartBadge();
+
+// Conectar botones de compra cuando los productos ya están pintados
+function attachBuyButtons() {
+  document.querySelectorAll('.btn-comprar').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const sku   = btn.dataset.sku || '';
+      const name  = btn.dataset.name || 'Producto';
+      const price = parseFloat(btn.dataset.price || '0') || 0;
+      const image = btn.dataset.image || '';
+
+      addToCart({ sku, name, price, image });
+    });
+  });
+}
+
 </script>
 
 </body>

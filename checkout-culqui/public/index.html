@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>AFinder · Pago Culqi</title>
+
+  <!-- Culqi Checkout -->
+  <script src="https://checkout.culqi.com/js/v4"></script>
+
+  <script>
+    // Reemplaza por tu llave pública real de Culqi
+    const CULQI_PUBLIC_KEY = "pk_test_TU_LLAVE_PUBLICA";
+  </script>
+
+</head>
+<body>
+  <div class="checkout-container">
+  <h1  class="title" >Pago con Culqi</h1>
+  <p class="subtitle">Completa tus datos para coordinar la entrega de tu pedido y luego realiza el pago con tarjeta.</p>
+
+  <form id="af-form" class="checkout-grid">
+    <!-- Datos del comprador -->
+    <div class="full section-title"><h2>Datos del comprador</h2></div>
+
+    <div class="form-group">
+      <label for="nombre">Nombre</label>
+      <input id="nombre" name="nombre" type="text"
+             placeholder="Juan" required />
+    </div>
+
+    <div class="form-group">
+      <label for="apellido">Apellido</label>
+      <input id="apellido" name="apellido" type="text"
+             placeholder="Pérez" required />
+    </div>
+
+    <div class="form-group">
+      <label for="dni">DNI</label>
+      <input id="dni" name="dni" type="text"
+             placeholder="12345678"
+             inputmode="numeric"
+             minlength="8" maxlength="8"
+             pattern="[0-9]{8}"
+             title="El DNI debe tener exactamente 8 dígitos numéricos"
+             required />
+    </div>
+
+    <div class="form-group">
+      <label for="celular">Celular</label>
+      <input id="celular" name="celular" type="tel"
+             placeholder="987654321"
+             inputmode="numeric"
+             minlength="9" maxlength="9"
+             pattern="9[0-9]{8}"
+             title="El celular debe empezar con 9 y tener 9 dígitos"
+             required />
+    </div>
+
+    <div class="form-group full">
+      <label for="email">Correo electrónico</label>
+      <input id="email" name="email" type="email"
+             placeholder="correo@ejemplo.com"
+             title="Ingresa un correo válido, por ejemplo usuario@dominio.com"
+             required />
+    </div>
+
+    <!-- Datos de envío -->
+    <div class="full section-title"><h2>Dirección de entrega</h2></div>
+
+    <div class="form-group">
+      <label for="direccion">Dirección</label>
+      <input id="direccion" name="direccion" type="text"
+             placeholder="Av. Principal 123, Mz. X Lt. Y" required />
+    </div>
+
+    <div class="form-group">
+      <label for="distrito">Distrito / Ciudad</label>
+      <input id="distrito" name="distrito" type="text"
+             placeholder="Nuevo Chimbote" required />
+    </div>
+
+    <div class="form-group full">
+      <label for="referencia">Referencia (opcional)</label>
+      <textarea id="referencia" name="referencia"
+                placeholder="Frente al parque, portón negro, 2do piso"></textarea>
+    </div>
+
+    <!-- Monto -->
+    <div class="full amount-row">
+      <strong>Monto demo:</strong> <span id="montoTexto">S/ 5.00</span>
+    </div>
+
+    <div class="pay-btn full">
+      <button type="submit">Pagar con tarjeta</button>
+    </div>
+  </form>
+</div>
+
+<div id="toast"></div>
+<script>
+  const soloNumeros = (el, max) => {
+    el.addEventListener('input', () => {
+      el.value = el.value.replace(/\D/g, '').slice(0, max);
+    });
+  };
+
+  soloNumeros(document.getElementById('dni'), 8);
+  soloNumeros(document.getElementById('celular'), 9);
+</script>
+
+  <script>
+    const toast = (msg) => {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(window.__tt);
+      window.__tt = setTimeout(() => t.classList.remove('show'), 1800);
+    };
+
+    if (typeof Culqi === "undefined") {
+      toast("Error cargando Culqi. Intenta recargar la página.");
+    } else {
+      // 1) Configuración Culqi
+      Culqi.publicKey = CULQI_PUBLIC_KEY;
+
+      // leemos ?amount= del querystring (en céntimos). Si no hay, usamos 500.
+      const params = new URLSearchParams(location.search);
+      const amountFromQS = parseInt(params.get('amount') || '0', 10);
+      const amount = Number.isInteger(amountFromQS) && amountFromQS > 0
+        ? amountFromQS
+        : 500;
+
+      // actualizar texto del monto (PEN)
+      document.getElementById('montoTexto').textContent =
+        'S/ ' + (amount / 100).toFixed(2);
+
+      Culqi.settings({
+        title: 'AFinder',
+        currency: 'PEN',
+        description: 'Compra en AutoFinder',
+        amount: amount, // céntimos
+      });
+
+      // 2) Callback de Culqi: aquí ya tienes el token de tarjeta
+      window.culqi = async function () {
+        if (Culqi.token) {
+          const tokenId = Culqi.token.id;
+          const email = document.getElementById('email').value.trim();
+
+          try {
+            const resp = await fetch('/pay', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                tokenId,
+                email,
+                amount
+                // aquí podrías también enviar nombre, dirección, etc. a tu backend
+              }),
+            });
+
+            const data = await resp.json();
+            if (!resp.ok) {
+              throw new Error(data.error || 'Error en el pago');
+            }
+
+            console.log('Cargo Culqi OK:', data.charge);
+            toast('Pago exitoso');
+          } catch (e) {
+            console.error(e);
+            toast(e.message);
+          }
+        } else {
+          toast(Culqi.error?.user_message || 'Error con la tarjeta');
+        }
+      };
+
+      // 3) Submit del formulario → abrir Culqi (solo si es válido)
+      document.getElementById('af-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        // el navegador valida los "required" automáticamente
+        Culqi.open();
+      });
+    }
+  </script>
+</body>
+</html>
