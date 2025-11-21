@@ -44,14 +44,13 @@ def configure_driver():
     chrome_options.add_argument("--window-size=1920,1080")
 
     driver = webdriver.Chrome(options=chrome_options)
-    driver.set_page_load_timeout(60)  # sube de 20 a 60 o incluso coméntalo
+    driver.set_page_load_timeout(60)
     return driver
 
 
 def upsert_batch(conn, cat: str, items: list[ProductData], id_tienda: int):
     """Inserta/actualiza productos en la tabla productos."""
     for it in items:
-        # si tu precio viene como string "209" o "209.00", conviértelo:
         try:
             precio_val = float(it.data_best_price or 0)
         except (ValueError, TypeError):
@@ -59,11 +58,11 @@ def upsert_batch(conn, cat: str, items: list[ProductData], id_tienda: int):
 
         conn.execute(UPSERT_SQL, {
             "id_tienda": id_tienda,
-            "nombre": (it.data_name or "")[:150],   # por si acaso cortar a 150 chars
-            "descr": "",                            # luego puedes enriquecerlo
-            "marca": "",                            # aquí podrías parsear marca si la obtienes
+            "nombre": (it.data_name or "")[:150],
+            "descr": "",
+            "marca": "",
             "cat": cat,
-            "estado": "nuevo",                      # ENUM válido: 'nuevo' o 'usado'
+            "estado": "nuevo",
             "precio": precio_val,
             "img": (it.data_image or "")[:255] if it.data_image else None,
         })
@@ -79,36 +78,57 @@ async def scrape_promart(endpoint: str, categoria_actual: str, q: str | None = N
             driver.get(endpoint)
         except TimeoutException:
             print(f"[TIMEOUT] Cargando {endpoint}, continúo con lo que haya...")
-            
-        # 2) Esperar a que haya productos visibles
+
+        # pequeño margen extra para que termine de ejecutar JS
+        time.sleep(3)
+
+        # 2) Intentar esperar a que haya productos visibles (sin return en timeout)
+        selector_base = ".js-prod .container__item--product, li[data-sku]"
         try:
-            WebDriverWait(driver, 10).until(
+            WebDriverWait(driver, 20).until(
                 EC.presence_of_all_elements_located(
-                    (By.CSS_SELECTOR, ".js-prod .container__item--product, li[data-sku]")
+                    (By.CSS_SELECTOR, selector_base)
                 )
             )
         except TimeoutException:
-            print(f"[TIMEOUT] No se encontraron productos visibles en {endpoint}")
-            return ApiResponse(
-                bstatus=False,
-                smessage="No se encontraron productos (timeout / cambio de página)",
-                odata=[],
-            )
+            print(f"[TIMEOUT] Esperando productos en {endpoint}, intentaré parsear igual...")
 
-        # 3) Scroll para cargar más resultados
+        # 3) Scroll para cargar más resultados (con límite)
         last_h = 0
-        while True:
+        for _ in range(10):
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(1.2)
+            time.sleep(1.0)
             h = driver.execute_script("return document.body.scrollHeight")
             if h == last_h:
                 break
             last_h = h
 
-        # 4) Parsear HTML
+        # 4) Parsear HTML con varios posibles selectores
         soup = BeautifulSoup(driver.page_source, "html.parser")
-        items = soup.select(".js-prod .container__item--product, li[data-sku]")
 
+        selectors = [
+            ".js-prod .container__item--product",
+            "li[data-sku]",
+            ".vtex-product-summary-2-x-container",   # layout alternativo típico
+            ".product-item",                         # reserva, por si acaso
+        ]
+
+        items = []
+        for sel in selectors:
+            items = soup.select(sel)
+            if items:
+                print(f"[DEBUG] {endpoint} -> {len(items)} items usando selector '{sel}'")
+                break
+
+        if not items:
+            print(f"[DEBUG] {endpoint} -> 0 items en el DOM con los selectores probados")
+            return ApiResponse(
+                bstatus=False,
+                smessage="No se encontraron productos (selectores no coincidieron / página vacía)",
+                odata=[],
+            )
+
+        # 5) Extraer productos
         for item in items:
             try:
                 sku = item.get("data-sku", "")
@@ -118,7 +138,6 @@ async def scrape_promart(endpoint: str, categoria_actual: str, q: str | None = N
                 img_tag = item.select_one(".images__wrap img") or item.find("img")
                 image_url = img_tag["src"] if img_tag and img_tag.has_attr("src") else ""
 
-                # filtro por q en nombre (básico)
                 if q and q.lower() not in (name or "").lower():
                     continue
 
@@ -133,15 +152,6 @@ async def scrape_promart(endpoint: str, categoria_actual: str, q: str | None = N
             except Exception as e:
                 print(f"Error procesando producto: {e}")
                 continue
-
-        # 5) Filtro adicional q en nombre o sku (si quieres mantenerlo)
-        if q:
-            ql = q.casefold()
-            products = [
-                p for p in products
-                if ql in (p.data_name or "").casefold()
-                or ql in (p.data_sku or "").casefold()
-            ]
 
         # 6) Guardar en BD
         if products:

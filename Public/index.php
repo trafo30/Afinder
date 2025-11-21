@@ -45,15 +45,29 @@ session_start();
 
   <!-- Cabecera -->
 
-   <header>
-    <div class="logo">
-      <img src="imgs/logo.png" alt="AutoFinder Logo">
-    </div>
+<header>
+  <div class="logo">
+    <img src="imgs/logo.png" alt="AutoFinder Logo">
+  </div>
 
-   <form action="productos.php" method="get" class="search">
-  <input type="hidden" name="cat" value="llantas"><!-- categoría por defecto -->
-  <input type="text" name="q" placeholder="Buscar productos...">
-    </form>
+  <form action="productos.php" method="get" class="search">
+    <input type="hidden" name="modo" value="busqueda">
+
+    <div class="search-box">
+      <i class="fa-solid fa-magnifying-glass search-icon"></i>
+      <input
+        type="text"
+        name="q"
+        class="search-input"
+        placeholder="Buscar productos, marcas o categorías..."
+      >
+      <button type="submit" class="search-btn">
+        Buscar
+      </button>
+    </div>
+  </form>
+
+
 
     <div class="icons">
       <div class="icon-item">
@@ -86,10 +100,10 @@ session_start();
         <aside class="sidebar">
             <ul>
                 <li><a href="productos.php?cat=baterias">Baterías para autos</a></li>
-                <li><a href="productos.php?cat=filtros-aceite">Filtros de aceite</a></li>
-                <li><a href="productos.php?cat=focos">Focos y ampolletas</a></li>
-                <li><a href="productos.php?cat=amortiguadores">Amortiguadores</a></li>
-                <li><a href="productos.php?cat=rotulas">Rótulas</a></li>
+                <li><a href="productos.php?cat=Aceite">Aceite</a></li>
+                <li><a href="productos.php?cat=Aditivos">Aditivos</a></li>
+                <li><a href="productos.php?cat=Accesorios para Exterior">Accesorios para exterior</a></li>
+                <li><a href="productos.php?cat=Accesorios para interior">Accesorios para interiores</a></li>
                 <li><a href="productos.php?cat=rodamientos">Rodamientos</a></li>
                 <li><a href="productos.php?cat=filtro-aire">Filtro de aire</a></li>
                 <li><a href="productos.php?cat=espejos">Espejos laterales</a></li>  

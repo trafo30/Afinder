@@ -21,6 +21,87 @@ header {
     font-family: 'Montserrat', sans-serif;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+/* Contenedor general del buscador en el header */
+header .search {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 0 2rem;
+}
+
+/* Caja del buscador */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 520px;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 999px;
+  padding: 0.6rem 0.9rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e3e6eb;
+}
+
+/* Icono de lupa */
+.search-icon {
+  font-size: 0.95rem;
+  color: #999fa8;
+}
+
+/* Input de texto */
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
+  background: transparent;
+  color: #222;
+}
+
+.search-input::placeholder {
+  color: #b0b5bf;
+}
+
+/* Botón de buscar */
+.search-btn {
+  border: none;
+  outline: none;
+  padding: 0.45rem 1.3rem;
+  border-radius: 999px;
+  background: #00a018;          /* verde tipo “acción” */
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+  white-space: nowrap;
+}
+
+.search-btn:hover {
+  background: #008514;
+  transform: translateY(-1px);
+}
+
+.search-btn:active {
+  transform: translateY(0);
+}
+
+/* Pequeño ajuste para pantallas chicas */
+@media (max-width: 768px) {
+  header .search {
+    padding: 0 1rem;
+  }
+
+  .search-box {
+    max-width: 100%;
+  }
+
+  .search-btn {
+    padding: 0.35rem 1rem;
+    font-size: 0.85rem;
+  }
+}
 
 .logo {
     font-size: 24px;
@@ -79,6 +160,8 @@ header input[type="text"] {
     opacity: 0.9;
     text-decoration: none;
 }
+
+
 
 /* Filtro */
 .main { display: flex; gap: 24px; }

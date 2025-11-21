@@ -1,23 +1,19 @@
 <?php
 session_start();
-$cat = $_GET['cat'] ?? 'llantas'; // valor por defecto
-$titulo = ucfirst($cat) . " - AutoFinder";
 
-// aquí defines endpoints API según categoría
-$endpoints = [
-  'baterias'       => 'http://localhost:8000/baterias',
-  'filtros-aceite' => 'http://localhost:8000/filtros-aceite',
-  'focos'          => 'http://localhost:8000/focos',
-  'amortiguadores' => 'http://localhost:8000/amortiguadores',
-  'rotulas'        => 'http://localhost:8000/rotulas',
-  'rodamientos'    => 'http://localhost:8000/rodamientos',
-  'filtro-aire'    => 'http://localhost:8000/filtro-aire',
-  'espejos'        => 'http://localhost:8000/espejos',
-  'llantas'        => 'http://localhost:8000/llantas'
-];
+// Modo de visualización: por categoría o búsqueda global
+$modo = $_GET['modo'] ?? 'categoria';      // 'categoria' | 'busqueda'
+$cat  = $_GET['cat']  ?? 'llantas';        // slug de categoría (baterias, aceite, etc.)
+$q    = trim($_GET['q'] ?? '');
 
-$cat = $_GET['cat'] ?? 'llantas';
-$apiUrl = "http://127.0.0.1:8000/categoria/{$cat}";
+// Definir título y endpoint según el modo
+if ($modo === 'busqueda') {
+    $titulo = "Búsqueda: " . ($q !== '' ? $q : "Todos") . " - AutoFinder";
+    $apiUrl = "http://127.0.0.1:8000/buscar";
+} else {
+    $titulo = ucfirst($cat) . " - AutoFinder";
+    $apiUrl = "http://127.0.0.1:8000/categoria/{$cat}";
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -26,26 +22,45 @@ $apiUrl = "http://127.0.0.1:8000/categoria/{$cat}";
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= htmlspecialchars($titulo) ?></title>
   <link rel="stylesheet" href="css/styles2.css">
+  <link rel="stylesheet" href="css/styles.css">
   <script defer src="js/comparar.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
 <body>
 <header>
-<div class="logo">
-  <a href="index.php">
-    <img src="imgs/logo.png" alt="AutoFinder Logo">
-  </a>
-</div>
+  <div class="logo">
+    <a href="index.php">
+      <img src="imgs/logo.png" alt="AutoFinder Logo">
+    </a>
+  </div>
+
+  <!-- Buscador GLOBAL: ignora la categoría, busca en todas -->
 <form class="search" action="productos.php" method="get">
-  <input type="hidden" name="cat" value="<?= htmlspecialchars($cat) ?>">
-  <input type="text" name="q" placeholder="Buscar productos..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
+  
+  <input type="hidden" name="modo" value="busqueda">
+
+  <div class="search-box">
+      <i class="fa-solid fa-magnifying-glass search-icon"></i>
+
+      <input type="text"
+             name="q"
+             class="search-input"
+             placeholder="Buscar productos..."
+             value="<?= htmlspecialchars($q) ?>">
+
+      <button type="submit" class="search-btn">Buscar</button>
+  </div>
+
 </form>
   <div class="icons">
     <div class="icon-item"><img src="imgs/corazon1.png" alt="Favoritos"><span>Favoritos</span></div>
     <div class="icon-item"><img src="imgs/carrito-de-compras.png" alt="Carrito"><span>Carrito</span></div>
     <?php if (isset($_SESSION['usuario'])): ?>
-      <div class="welcome"><p>Bienvenido</p><p><strong><?= htmlspecialchars($_SESSION['nombre']) ?></strong></p></div>
+      <div class="welcome">
+        <p>Bienvenido</p>
+        <p><strong><?= htmlspecialchars($_SESSION['nombre']) ?></strong></p>
+      </div>
       <a href="logout.php" class="login-button btn-salir">Salir</a>
     <?php else: ?>
       <button class="login-button">Ingresar</button>
@@ -57,20 +72,70 @@ $apiUrl = "http://127.0.0.1:8000/categoria/{$cat}";
   <aside class="filters">
     <h2>Categorías</h2>
     <ul>
-      <li><a href="?cat=baterias"       <?= $cat==='baterias'?'class="active"':'' ?>>Baterías para autos</a></li>
-      <li><a href="?cat=filtros-aceite" <?= $cat==='filtros-aceite'?'class="active"':'' ?>>Filtros de aceite</a></li>
-      <li><a href="?cat=focos"          <?= $cat==='focos'?'class="active"':'' ?>>Focos y ampolletas</a></li>
-      <li><a href="?cat=amortiguadores" <?= $cat==='amortiguadores'?'class="active"':'' ?>>Amortiguadores</a></li>
-      <li><a href="?cat=rotulas"        <?= $cat==='rotulas'?'class="active"':'' ?>>Rótulas</a></li>
-      <li><a href="?cat=rodamientos"    <?= $cat==='rodamientos'?'class="active"':'' ?>>Rodamientos</a></li>
-      <li><a href="?cat=filtro-aire"    <?= $cat==='filtro-aire'?'class="active"':'' ?>>Filtro de aire</a></li>
-      <li><a href="?cat=espejos"        <?= $cat==='espejos'?'class="active"':'' ?>>Espejos laterales</a></li>
-      <li><a href="?cat=llantas"        <?= $cat==='llantas'?'class="active"':'' ?>>Llantas</a></li>
+      <li>
+        <a href="?modo=categoria&cat=baterias"
+           <?= $modo === 'categoria' && $cat === 'baterias' ? 'class="active"' : '' ?>>
+           Baterías para autos
+        </a>
+      </li>
+      <li>
+        <a href="?modo=categoria&cat=Aceite"
+           <?= $modo === 'categoria' && $cat === 'Aceite' ? 'class="active"' : '' ?>>
+           Aceite
+        </a>
+      </li>
+      <li>
+        <a href="?modo=categoria&cat=Aditivos"
+           <?= $modo === 'categoria' && $cat === 'Aditivos' ? 'class="active"' : '' ?>>
+           Aditivos
+        </a>
+      </li>
+      <li>
+        <a href="?modo=categoria&cat=Accesorios para Exterior"
+           <?= $modo === 'categoria' && $cat === 'Accesorios para Exterior' ? 'class="active"' : '' ?>>
+           Accesorios para exterior
+        </a>
+      </li>
+      <li>
+        <a href="?modo=categoria&cat=Accesorios para interior"
+           <?= $modo === 'categoria' && $cat === 'Accesorios para interior' ? 'class="active"' : '' ?>>
+           Accesorios para interior
+        </a>
+      </li>
+      <li>
+        <a href="?modo=categoria&cat=rodamientos"
+           <?= $modo === 'categoria' && $cat === 'rodamientos' ? 'class="active"' : '' ?>>
+           Rodamientos
+        </a>
+      </li>
+      <li>
+        <a href="?modo=categoria&cat=filtro-aire"
+           <?= $modo === 'categoria' && $cat === 'filtro-aire' ? 'class="active"' : '' ?>>
+           Filtro de aire
+        </a>
+      </li>
+      <li>
+        <a href="?modo=categoria&cat=espejos"
+           <?= $modo === 'categoria' && $cat === 'espejos' ? 'class="active"' : '' ?>>
+           Espejos laterales
+        </a>
+      </li>
+      <li>
+        <a href="?modo=categoria&cat=llantas"
+           <?= $modo === 'categoria' && $cat === 'llantas' ? 'class="active"' : '' ?>>
+           Llantas
+        </a>
+      </li>
     </ul>
   </aside>
 
   <section class="products">
-    <h1><?= ucfirst($cat) ?> para Autos</h1>
+    <?php if ($modo === 'busqueda'): ?>
+      <h1>Resultados para "<?= htmlspecialchars($q) ?>"</h1>
+    <?php else: ?>
+      <h1><?= ucfirst($cat) ?> para Autos</h1>
+    <?php endif; ?>
+
     <div class="product-grid" id="productContainer"></div>
     <div class="pagination">
       <button>&lt;</button><button class="active">1</button><button>2</button><button>3</button><button>&gt;</button>
@@ -88,7 +153,8 @@ $apiUrl = "http://127.0.0.1:8000/categoria/{$cat}";
     </div>
   </div>
   <div class="footer-bottom">
-    <hr><p>&copy; AutoFinder 2025 - Todos los derechos reservados</p>
+    <hr>
+    <p>&copy; AutoFinder 2025 - Todos los derechos reservados</p>
   </div>
 </footer>
 
@@ -114,7 +180,6 @@ window.addEventListener('DOMContentLoaded', () => {
     .then(data => {
       console.log("JSON recibido:", data);
 
-      // data = { bstatus, smessage, odata }
       if (data.bstatus && Array.isArray(data.odata) && data.odata.length > 0) {
         container.innerHTML = "";
         data.odata.forEach(item => {

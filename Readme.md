@@ -36,5 +36,5 @@ Para iniciar el proyecto hecho en python debe seguir los siguientes pasos ubicad
 
 ### Actualizar productos scraper
 ```bash
-  python run_scraper.py
+  python -m app.run_scraper
 ```
