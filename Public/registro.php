@@ -183,9 +183,27 @@ $conexion->close();
          pattern="^[A-Za-z0-9._-]{3,50}$" title="Letras, números, punto, guion y guion bajo">
 
   <!-- Password fuerte: 8–64, mayúscula, minúscula, número y símbolo -->
-  <input type="password" name="contrasena" placeholder="Contraseña" required
-         pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,64}$"
-         title="Mínimo 8 caracteres con mayúscula, minúscula, número y símbolo">
+  <div class="password-wrapper">
+  <input 
+    id="password"
+    type="password"
+    name="contrasena"
+    placeholder="Contraseña"
+    required
+    pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,64}$"
+    title="Mínimo 8 caracteres con mayúscula, minúscula, número y símbolo"
+  >
+
+  <!-- Icono ojo -->
+  <span class="toggle-password" onclick="togglePassword()">
+    <!-- Ojo cerrado (por defecto) -->
+    <svg id="icon-eye" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#555" viewBox="0 0 24 24">
+      <path d="M12 5c-7.633 0-11 7-11 7s3.367 7 11 7 11-7 11-7-3.367-7-11-7zm0 12c-2.761 
+               0-5-2.239-5-5s2.239-5 5-5 5 2.239 5 5-2.239 5-5 5zm0-8c-1.654 
+               0-3 1.346-3 3s1.346 3 3 3 3-1.346 3-3-1.346-3-3-3z"/>
+    </svg>
+  </span>
+</div>
 
   <div class="terms-group">
     <label><input type="checkbox" name="acepto_condiciones" required> Acepto los términos y condiciones</label>
@@ -197,8 +215,29 @@ $conexion->close();
       </div>
     </div>
   </div>
-</body>
-<script>
+  <script>
+function togglePassword() {
+  const input = document.getElementById("password");
+  const icon = document.getElementById("icon-eye");
+
+  if (input.type === "password") {
+    input.type = "text";
+    icon.innerHTML = `
+      <path d="M12 5c-7.633 0-11 7-11 7s3.367 7 11 7 11-7 11-7-3.367-7-11-7zm0 
+               12c-2.761 0-5-2.239-5-5 0-.76.176-1.477.486-2.121L14.121 
+               14.757A4.948 4.948 0 0 1 12 17zm4.514-2.879L9.879 
+               7.243A4.948 4.948 0 0 1 12 7c2.761 0 5 2.239 5 5 0 .76-.176 
+               1.477-.486 2.121z"/>`;
+  } else {
+    input.type = "password";
+    icon.innerHTML = `
+      <path d="M12 5c-7.633 0-11 7-11 7s3.367 7 11 7 11-7 11-7-3.367-7-11-7zm0 
+               12c-2.761 0-5-2.239-5-5s2.239-5 5-5 5 2.239 5 5-2.239 
+               5-5 5zm0-8c-1.654 0-3 1.346-3 3s1.346 3 3 3 3-1.346 
+               3-3-1.346-3-3-3z"/>`;
+  }
+}
+</script>
 document.addEventListener('DOMContentLoaded', () => {
   const correo   = document.getElementById('correo');
   const cError   = document.getElementById('correoError');

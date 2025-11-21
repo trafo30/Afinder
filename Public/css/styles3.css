@@ -83,6 +83,36 @@ body, html {
   font-size: 1rem;
   color: #333;
 }
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-wrapper input {
+  width: 100%;
+  padding: 12px;
+  padding-right: 42px; /* espacio para el icono */
+  font-size: 15px;
+  border-radius: 10px;
+  border: 1px solid #d0d5dd;
+  background: #e9f1ff; /* tu color celeste */
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 35%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+}
+
+.toggle-password:hover svg {
+  fill: #111; /* cambia color al pasar el mouse */
+}
 
 /* =========== Checkbox =========== */
 .terms-group {
