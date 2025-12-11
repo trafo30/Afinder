@@ -4,6 +4,15 @@ body {
     padding: 0;
     background-color: #fdfdfd;
 }
+body {
+  cursor: url("../imgs/cursor-car.png") 0 0, auto;
+}
+
+a {
+  cursor: url("../imgs/cursor-car-2.png") 16 16, pointer;
+}
+
+
 
 .logo img {
     width: 180px;

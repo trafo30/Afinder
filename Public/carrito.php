@@ -1,46 +1,11 @@
 <?php
 session_start();
-$titulo = "Carrito - AutoFinder";
+$pageTitle = "Carrito - AutoFinder";
+include 'partials/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= htmlspecialchars($titulo) ?></title>
-  <link rel="stylesheet" href="css/styles2.css">
-    <link rel="stylesheet" href="css/styles_carrito.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-</head>
-<body>
-<header>
-  <div class="logo">
-    <a href="index.php">
-      <img src="imgs/logo.png" alt="AutoFinder Logo">
-    </a>
-  </div>
-  <form class="search" action="productos.php" method="get">
-    <input type="hidden" name="modo" value="busqueda">
-    <input type="text" name="q" placeholder="Buscar productos...">
-  </form>
-  <div class="icons">
-    <div class="icon-item"><img src="imgs/corazon1.png" alt="Favoritos"><span>Favoritos</span></div>
-
-    <a href="carrito.php" class="icon-item carrito-icon" style="text-decoration:none;">
-      <img src="imgs/carrito-de-compras.png" alt="Carrito">
-      <span>Carrito</span>
-      <span id="cart-count" class="cart-badge">0</span>
-    </a>
-
-    <?php if (isset($_SESSION['usuario'])): ?>
-      <div class="welcome"><p>Bienvenido</p><p><strong><?= htmlspecialchars($_SESSION['nombre']) ?></strong></p></div>
-      <a href="logout.php" class="login-button btn-salir">Salir</a>
-    <?php else: ?>
-      <a href="login.php" class="login-button">Ingresar</a>
-    <?php endif; ?>
-  </div>
-</header>
+<!-- CSS específico de carrito -->
+<link rel="stylesheet" href="css/styles_carrito.css">
 
 <main class="carrito-page">
   <div class="carrito-header">
@@ -79,43 +44,48 @@ $titulo = "Carrito - AutoFinder";
   </div>
 </main>
 
-<footer class="footer">
-  <div class="footer-container">
-    <div class="footer-section support">
-      <h3>Soporte</h3>
-      <p>Carretera Central Km 11.6, Lima, Perú.</p>
-      <p>grupo1@autofinder.com</p>
-      <p>+51 999 999 999</p>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <hr><p>&copy; AutoFinder 2025 - Todos los derechos reservados</p>
-  </div>
-</footer>
+<?php
+// Incluir FOOTER global
+include 'partials/footer.php';
+?>
 
 <div id="toast" class="toast"></div>
 
+<!-- Modal flotante para Culqi -->
+<div id="modalPago" class="modal-pago">
+  <div class="modal-pago-overlay"></div>
+  <div class="modal-pago-content">
+    <button id="cerrarModalPago" class="modal-pago-close">&times;</button>
+    <iframe id="pagoFrame" src="" frameborder="0"></iframe>
+  </div>
+</div>
+
 <script>
-  // --- Utilidades carrito (mismo formato que en productos.php) ---
-  const CART_KEY = 'afinder_cart';
+  // --- Utilidades base del carrito ---
 
   function getCart() {
     try {
-      const raw = localStorage.getItem(CART_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
+      const raw = localStorage.getItem('afinder_cart');
+      if (!raw) return [];
+      const cart = JSON.parse(raw);
+      return Array.isArray(cart) ? cart : [];
+    } catch (e) {
+      console.error('Error leyendo carrito:', e);
       return [];
     }
   }
 
   function saveCart(cart) {
-    localStorage.setItem(CART_KEY, JSON.stringify(cart));
-    updateCartBadge();
+    try {
+      localStorage.setItem('afinder_cart', JSON.stringify(cart));
+    } catch (e) {
+      console.error('Error guardando carrito:', e);
+    }
   }
 
   function updateCartBadge() {
     const cart = getCart();
-    const count = cart.reduce((acc, item) => acc + item.qty, 0);
+    const count = cart.reduce((acc, item) => acc + (item.qty || 1), 0);
     const badge = document.getElementById('cart-count');
     if (badge) badge.textContent = count;
   }
@@ -146,6 +116,7 @@ $titulo = "Carrito - AutoFinder";
       vacio.style.display = 'block';
       totalSpan.textContent = 'S/ 0.00';
       btnPagar.disabled = true;
+      btnPagar.dataset.amountCents = '0';
       updateCartBadge();
       return;
     }
@@ -205,28 +176,59 @@ $titulo = "Carrito - AutoFinder";
     });
 
     totalSpan.textContent = 'S/ ' + total.toFixed(2);
-    btnPagar.dataset.amountCents = Math.round(total * 100); // para Culqi
+    document.getElementById('btnPagar').dataset.amountCents = Math.round(total * 100); // para Culqi
     updateCartBadge();
   }
 
-  // --- Ir a Culqi con el total ---
-  document.getElementById('btnPagar').addEventListener('click', () => {
+  // --- Abrir modal Culqi con iframe ---
+  const modalPago   = document.getElementById('modalPago');
+  const pagoFrame   = document.getElementById('pagoFrame');
+  const cerrarModal = document.getElementById('cerrarModalPago');
+  const overlayPago = document.querySelector('.modal-pago-overlay');
+
+  document.getElementById('btnPagar').addEventListener('click', (e) => {
+    e.preventDefault();
+
     const amountCents = parseInt(
       document.getElementById('btnPagar').dataset.amountCents || '0',
       10
     );
+
     if (!amountCents || amountCents <= 0) {
       showToast('El carrito está vacío o el total es inválido');
       return;
     }
-    // Culqi corre en http://localhost:4242 y lee ?amount=
-    const url = `http://localhost:4242?amount=${amountCents}`;
-    window.location.href = url;
+
+    // Datos del usuario desde la sesión PHP
+    const nombre   = "<?= isset($_SESSION['nombre'])   ? addslashes($_SESSION['nombre'])   : '' ?>";
+    const apellido = "<?= isset($_SESSION['apellido']) ? addslashes($_SESSION['apellido']) : '' ?>";
+    const email    = "<?= isset($_SESSION['correo'])   ? addslashes($_SESSION['correo'])   : '' ?>";
+    const celular  = "<?= isset($_SESSION['celular'])  ? addslashes($_SESSION['celular'])  : '' ?>";
+
+    const params = new URLSearchParams({
+      amount:   amountCents.toString(),
+      nombre:   nombre,
+      apellido: apellido,
+      email:    email,
+      celular:  celular,
+    });
+
+    const url = `http://localhost:4242?${params.toString()}`;
+
+    // cargar la página de Culqi dentro del iframe y mostrar modal
+    pagoFrame.src = url;
+    modalPago.classList.add('open');
   });
+
+  function cerrarModalPagoFn() {
+    modalPago.classList.remove('open');
+    pagoFrame.src = ''; // opcional: limpiar iframe
+  }
+
+  cerrarModal.addEventListener('click', cerrarModalPagoFn);
+  overlayPago.addEventListener('click', cerrarModalPagoFn);
 
   // Inicializar
   updateCartBadge();
   renderCart();
 </script>
-</body>
-</html>

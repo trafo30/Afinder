@@ -20,9 +20,17 @@ if ($result->num_rows === 1) {
     $user = $result->fetch_assoc();
     // Verificar contraseña hasheada
     if (password_verify($contrasena, $user['contrasena'])) {
-        // Guardar datos en sesión
-        $_SESSION['usuario'] = $user['usuario'];
-        $_SESSION['nombre'] = $user['nombre'];
+
+        // GUARDAR TAMBIÉN EL ID DEL USUARIO
+        $_SESSION['id_usuario'] = (int)$user['id_usuario'];
+
+        // Guardar otros datos en sesión
+        $_SESSION['usuario']  = $user['usuario'];
+        $_SESSION['nombre']   = $user['nombre'];
+        $_SESSION['apellido'] = $user['apellido'];
+        $_SESSION['correo']   = $user['correo'];
+        $_SESSION['celular']  = $user['celular'];
+
         header("Location: index.php"); // Redirigir a página principal
         exit();
     } else {
@@ -34,6 +42,3 @@ if ($result->num_rows === 1) {
 
 $stmt->close();
 $conexion->close();
-?>
-
-hello

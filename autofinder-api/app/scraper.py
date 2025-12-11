@@ -21,10 +21,11 @@ ID_TIENDA_PROMART = 1
 # SQL de upsert para la tabla productos
 UPSERT_SQL = text("""
 INSERT INTO productos
-(id_tienda, nombre, descripcion, marca, categoria, estado, precio, imagen_url)
+  (id_tienda, sku, nombre, descripcion, marca, categoria, estado, precio, imagen_url)
 VALUES
-(:id_tienda, :nombre, :descr, :marca, :cat, :estado, :precio, :img)
+  (:id_tienda, :sku, :nombre, :descr, :marca, :cat, :estado, :precio, :img)
 ON DUPLICATE KEY UPDATE
+  nombre         = VALUES(nombre),
   descripcion    = VALUES(descripcion),
   marca          = VALUES(marca),
   categoria      = VALUES(categoria),
@@ -47,7 +48,6 @@ def configure_driver():
     driver.set_page_load_timeout(60)
     return driver
 
-
 def upsert_batch(conn, cat: str, items: list[ProductData], id_tienda: int):
     """Inserta/actualiza productos en la tabla productos."""
     for it in items:
@@ -56,18 +56,25 @@ def upsert_batch(conn, cat: str, items: list[ProductData], id_tienda: int):
         except (ValueError, TypeError):
             precio_val = 0.0
 
-        conn.execute(UPSERT_SQL, {
-            "id_tienda": id_tienda,
-            "nombre": (it.data_name or "")[:150],
-            "descr": "",
-            "marca": "",
-            "cat": cat,
-            "estado": "nuevo",
-            "precio": precio_val,
-            "img": (it.data_image or "")[:255] if it.data_image else None,
-        })
+            # DEBUG: ver qué está llegando
+        print("[UPSERT]", "SKU:", repr(it.data_sku), "NOMBRE:", it.data_name)
 
 
+        conn.execute(
+            UPSERT_SQL,
+            {
+                "id_tienda": id_tienda,
+                "sku": it.data_sku or None,  # si viene vacío, guardar NULL
+                "nombre": (it.data_name or "")[:150],
+                "descr": "",
+                "marca": "",
+                "cat": cat,
+                "estado": "nuevo",
+                "precio": precio_val,
+                "img": (it.data_image or "")[:255] if it.data_image else None,
+            },
+        )
+        
 async def scrape_promart(endpoint: str, categoria_actual: str, q: str | None = None) -> ApiResponse:
     driver = configure_driver()
     products: list[ProductData] = []

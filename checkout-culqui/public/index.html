@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="es">
 <head>
   <meta charset="utf-8" />
@@ -17,98 +17,101 @@
 </head>
 <body>
   <div class="checkout-container">
-  <h1  class="title" >Pago con Culqi</h1>
-  <p class="subtitle">Completa tus datos para coordinar la entrega de tu pedido y luego realiza el pago con tarjeta.</p>
+    <h1 class="title">Pago con Culqi</h1>
+    <p class="subtitle">
+      Completa tus datos para coordinar la entrega de tu pedido y luego realiza el pago con tarjeta.
+    </p>
 
-  <form id="af-form" class="checkout-grid">
-    <!-- Datos del comprador -->
-    <div class="full section-title"><h2>Datos del comprador</h2></div>
+    <form id="af-form" class="checkout-grid">
+      <!-- Datos del comprador -->
+      <div class="full section-title"><h2>Datos del comprador</h2></div>
 
-    <div class="form-group">
-      <label for="nombre">Nombre</label>
-      <input id="nombre" name="nombre" type="text"
-             placeholder="Juan" required />
-    </div>
+      <div class="form-group">
+        <label for="nombre">Nombre</label>
+        <input id="nombre" name="nombre" type="text"
+               placeholder="Juan" required />
+      </div>
 
-    <div class="form-group">
-      <label for="apellido">Apellido</label>
-      <input id="apellido" name="apellido" type="text"
-             placeholder="Pérez" required />
-    </div>
+      <div class="form-group">
+        <label for="apellido">Apellido</label>
+        <input id="apellido" name="apellido" type="text"
+               placeholder="Pérez" required />
+      </div>
 
-    <div class="form-group">
-      <label for="dni">DNI</label>
-      <input id="dni" name="dni" type="text"
-             placeholder="12345678"
-             inputmode="numeric"
-             minlength="8" maxlength="8"
-             pattern="[0-9]{8}"
-             title="El DNI debe tener exactamente 8 dígitos numéricos"
-             required />
-    </div>
+      <div class="form-group">
+        <label for="dni">DNI</label>
+        <input id="dni" name="dni" type="text"
+               placeholder="12345678"
+               inputmode="numeric"
+               minlength="8" maxlength="8"
+               pattern="[0-9]{8}"
+               title="El DNI debe tener exactamente 8 dígitos numéricos"
+               required />
+      </div>
 
-    <div class="form-group">
-      <label for="celular">Celular</label>
-      <input id="celular" name="celular" type="tel"
-             placeholder="987654321"
-             inputmode="numeric"
-             minlength="9" maxlength="9"
-             pattern="9[0-9]{8}"
-             title="El celular debe empezar con 9 y tener 9 dígitos"
-             required />
-    </div>
+      <div class="form-group">
+        <label for="celular">Celular</label>
+        <input id="celular" name="celular" type="tel"
+               placeholder="987654321"
+               inputmode="numeric"
+               minlength="9" maxlength="9"
+               pattern="9[0-9]{8}"
+               title="El celular debe empezar con 9 y tener 9 dígitos"
+               required />
+      </div>
 
-    <div class="form-group full">
-      <label for="email">Correo electrónico</label>
-      <input id="email" name="email" type="email"
-             placeholder="correo@ejemplo.com"
-             title="Ingresa un correo válido, por ejemplo usuario@dominio.com"
-             required />
-    </div>
+      <div class="form-group full">
+        <label for="email">Correo electrónico</label>
+        <input id="email" name="email" type="email"
+               placeholder="correo@ejemplo.com"
+               title="Ingresa un correo válido, por ejemplo usuario@dominio.com"
+               required />
+      </div>
 
-    <!-- Datos de envío -->
-    <div class="full section-title"><h2>Dirección de entrega</h2></div>
+      <!-- Datos de envío -->
+      <div class="full section-title"><h2>Dirección de entrega</h2></div>
 
-    <div class="form-group">
-      <label for="direccion">Dirección</label>
-      <input id="direccion" name="direccion" type="text"
-             placeholder="Av. Principal 123, Mz. X Lt. Y" required />
-    </div>
+      <div class="form-group">
+        <label for="direccion">Dirección</label>
+        <input id="direccion" name="direccion" type="text"
+               placeholder="Av. Principal 123, Mz. X Lt. Y" required />
+      </div>
 
-    <div class="form-group">
-      <label for="distrito">Distrito / Ciudad</label>
-      <input id="distrito" name="distrito" type="text"
-             placeholder="Nuevo Chimbote" required />
-    </div>
+      <div class="form-group">
+        <label for="distrito">Distrito / Ciudad</label>
+        <input id="distrito" name="distrito" type="text"
+               placeholder="Nuevo Chimbote" required />
+      </div>
 
-    <div class="form-group full">
-      <label for="referencia">Referencia (opcional)</label>
-      <textarea id="referencia" name="referencia"
-                placeholder="Frente al parque, portón negro, 2do piso"></textarea>
-    </div>
+      <div class="form-group full">
+        <label for="referencia">Referencia (opcional)</label>
+        <textarea id="referencia" name="referencia"
+                  placeholder="Frente al parque, portón negro, 2do piso"></textarea>
+      </div>
 
-    <!-- Monto -->
-    <div class="full amount-row">
-      <strong>Monto demo:</strong> <span id="montoTexto">S/ 5.00</span>
-    </div>
+      <!-- Monto -->
+      <div class="full amount-row">
+        <strong>Monto demo:</strong> <span id="montoTexto">S/ 5.00</span>
+      </div>
 
-    <div class="pay-btn full">
-      <button type="submit">Pagar con tarjeta</button>
-    </div>
-  </form>
-</div>
+      <div class="pay-btn full">
+        <button type="submit">Pagar con tarjeta</button>
+      </div>
+    </form>
+  </div>
 
-<div id="toast"></div>
-<script>
-  const soloNumeros = (el, max) => {
-    el.addEventListener('input', () => {
-      el.value = el.value.replace(/\D/g, '').slice(0, max);
-    });
-  };
+  <div id="toast"></div>
 
-  soloNumeros(document.getElementById('dni'), 8);
-  soloNumeros(document.getElementById('celular'), 9);
-</script>
+  <script>
+    const soloNumeros = (el, max) => {
+      el.addEventListener('input', () => {
+        el.value = el.value.replace(/\D/g, '').slice(0, max);
+      });
+    };
+
+    soloNumeros(document.getElementById('dni'), 8);
+    soloNumeros(document.getElementById('celular'), 9);
+  </script>
 
   <script>
     const toast = (msg) => {
@@ -125,17 +128,30 @@
       // 1) Configuración Culqi
       Culqi.publicKey = CULQI_PUBLIC_KEY;
 
-      // leemos ?amount= del querystring (en céntimos). Si no hay, usamos 500.
       const params = new URLSearchParams(location.search);
+
+      // --- Leer monto desde la URL ---
       const amountFromQS = parseInt(params.get('amount') || '0', 10);
       const amount = Number.isInteger(amountFromQS) && amountFromQS > 0
         ? amountFromQS
         : 500;
 
-      // actualizar texto del monto (PEN)
+      // Mostrar monto en texto
       document.getElementById('montoTexto').textContent =
         'S/ ' + (amount / 100).toFixed(2);
 
+      // --- AUTOCOMPLETAR DATOS DEL COMPRADOR DESDE LA URL ---
+      const nombreQS   = params.get('nombre')   || '';
+      const apellidoQS = params.get('apellido') || '';
+      const emailQS    = params.get('email')    || '';
+      const celularQS  = params.get('celular')  || '';
+
+      if (nombreQS)   document.getElementById('nombre').value   = nombreQS;
+      if (apellidoQS) document.getElementById('apellido').value = apellidoQS;
+      if (emailQS)    document.getElementById('email').value    = emailQS;
+      if (celularQS)  document.getElementById('celular').value  = celularQS;
+
+      // Config Culqi
       Culqi.settings({
         title: 'AFinder',
         currency: 'PEN',
@@ -157,7 +173,6 @@
                 tokenId,
                 email,
                 amount
-                // aquí podrías también enviar nombre, dirección, etc. a tu backend
               }),
             });
 
@@ -180,7 +195,6 @@
       // 3) Submit del formulario → abrir Culqi (solo si es válido)
       document.getElementById('af-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        // el navegador valida los "required" automáticamente
         Culqi.open();
       });
     }

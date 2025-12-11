@@ -1,5 +1,8 @@
 <?php
-session_start();
+// --- LÓGICA PHP INICIAL ---
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Modo de visualización: por categoría o búsqueda global
 $modo = $_GET['modo'] ?? 'categoria';      // 'categoria' | 'busqueda'
@@ -14,66 +17,43 @@ if ($modo === 'busqueda') {
     $titulo = ucfirst($cat) . " - AutoFinder";
     $apiUrl = "http://127.0.0.1:8000/categoria/{$cat}";
 }
+
+// --- FAVORITOS DEL USUARIO EN BD ---
+$userFavIds = [];
+if (isset($_SESSION['id_usuario'])) {
+    $conexion = new mysqli("localhost", "root", "", "autofinder");
+    if (!$conexion->connect_error) {
+        $sqlFav = "SELECT id_producto FROM favoritos WHERE id_usuario = ?";
+        $st = $conexion->prepare($sqlFav);
+        $st->bind_param("i", $_SESSION['id_usuario']);
+        $st->execute();
+        $rs = $st->get_result();
+        while ($row = $rs->fetch_assoc()) {
+            $userFavIds[] = (int)$row['id_producto'];
+        }
+        $st->close();
+        $conexion->close();
+    }
+}
+
+// Título para el <head> de header.php
+$pageTitle = $titulo;
+
+// Incluir HEADER global
+include 'partials/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= htmlspecialchars($titulo) ?></title>
-  <link rel="stylesheet" href="css/styles2.css">
-  <link rel="stylesheet" href="css/styles.css">
-  <script defer src="js/comparar.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
+
+<!-- Variables globales para JS -->
+<script>
+  const USER_ID  = <?= isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 'null' ?>;
+  const USER_FAVS = <?= json_encode($userFavIds) ?>;
+</script>
+
+<!-- CSS adicional de esta página (productos) -->
+<link rel="stylesheet" href="css/styles2.css">
+
+<!-- Toast global para mensajes -->
 <div id="toast" class="toast"></div>
-<body>
-<header>
-  <div class="logo">
-    <a href="index.php">
-      <img src="imgs/logo.png" alt="AutoFinder Logo">
-    </a>
-  </div>
-
-  <!-- Buscador GLOBAL: ignora la categoría, busca en todas -->
-<form class="search" action="productos.php" method="get">
-  
-  <input type="hidden" name="modo" value="busqueda">
-
-  <div class="search-box">
-      <i class="fa-solid fa-magnifying-glass search-icon"></i>
-
-      <input type="text"
-             name="q"
-             class="search-input"
-             placeholder="Buscar productos..."
-             value="<?= htmlspecialchars($q) ?>">
-
-      <button type="submit" class="search-btn">Buscar</button>
-  </div>
-
-</form>
-  <div class="icons">
-    <div class="icon-item"><img src="imgs/corazon1.png" alt="Favoritos"><span>Favoritos</span></div>
-
-<a href="carrito.php" class="icon-item carrito-icon" style="text-decoration:none;">
-      <img src="imgs/carrito-de-compras.png" alt="Carrito">
-      <span>Carrito</span>
-      <span id="cart-count" class="cart-badge">0</span>
-    </a>
-
-        
-    <?php if (isset($_SESSION['usuario'])): ?>
-      <div class="welcome">
-        <p>Bienvenido</p>
-        <p><strong><?= htmlspecialchars($_SESSION['nombre']) ?></strong></p>
-      </div>
-      <a href="logout.php" class="login-button btn-salir">Salir</a>
-    <?php else: ?>
-      <button class="login-button">Ingresar</button>
-    <?php endif; ?>
-  </div>
-</header>
 
 <main class="container">
   <aside class="filters">
@@ -144,82 +124,207 @@ if ($modo === 'busqueda') {
     <?php endif; ?>
 
     <div class="product-grid" id="productContainer"></div>
-    <div class="pagination">
-      <button>&lt;</button><button class="active">1</button><button>2</button><button>3</button><button>&gt;</button>
-    </div>
+
+    <!-- paginación dinámica -->
+    <div class="pagination" id="pagination"></div>
   </section>
 </main>
 
-<footer class="footer">
-  <div class="footer-container">
-    <div class="footer-section support">
-      <h3>Soporte</h3>
-      <p>Carretera Central Km 11.6, Lima, Perú.</p>
-      <p>grupo1@autofinder.com</p>
-      <p>+51 999 999 999</p>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <hr>
-    <p>&copy; AutoFinder 2025 - Todos los derechos reservados</p>
-  </div>
-</footer>
-
 <script>
+const ITEMS_PER_PAGE = 12;
+let productsData = [];
+let currentPage = 1;
+const userFavSet = new Set((USER_FAVS || []).map(Number));
+
 window.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('productContainer');
   const params = new URLSearchParams(location.search);
   const q = (params.get('q') || '').trim();
 
+  const pageParam = parseInt(params.get('page') || '1', 10);
+  if (!isNaN(pageParam) && pageParam > 0) {
+    currentPage = pageParam;
+  }
+
   const url = new URL("<?= $apiUrl ?>");
   if (q) url.searchParams.set('q', q);
 
-  console.log("Llamando a API:", url.toString());
-
   fetch(url.toString())
     .then(res => {
-      console.log("HTTP status:", res.status);
-      if (!res.ok) {
-        throw new Error("HTTP " + res.status);
-      }
+      if (!res.ok) throw new Error("HTTP " + res.status);
       return res.json();
     })
     .then(data => {
-      console.log("JSON recibido:", data);
-
       if (data.bstatus && Array.isArray(data.odata) && data.odata.length > 0) {
-        container.innerHTML = "";
-        data.odata.forEach(item => {
-          const card = document.createElement('div');
-          card.className = 'product-card';
-          card.innerHTML = `
-            <img src="${item.data_image}" alt="${item.data_name}">
-            <h3>${item.data_name}</h3>
-            <p class="price">S/ ${item.data_best_price}</p>
-            <div class="botones-producto">
-              <a href="#"
-                class="btn-comprar"
-                data-sku="${item.data_sku || ''}"
-                data-name="${item.data_name}"
-                data-price="${item.data_best_price}"
-                data-image="${item.data_image}">
-                Comprar
-              </a>
-              <a href="#" class="btn-comparar">Comparar</a>
-            </div>`;
-          container.appendChild(card);
-        });
-
-        attachBuyButtons();
+        productsData = data.odata;
+        renderProductsPage();
       } else {
         container.innerHTML = "<p>No se encontraron productos.</p>";
+        document.getElementById('pagination').innerHTML = '';
       }
     })
     .catch(err => {
       console.error("Error en fetch o JSON:", err);
       container.innerHTML = "<p>Error al cargar productos.</p>";
+      document.getElementById('pagination').innerHTML = '';
     });
 });
+
+// --- Scroll al inicio de la sección de productos ---
+function scrollToProductsTop() {
+  const productsSection = document.querySelector('.products');
+  if (!productsSection) return;
+
+  const currentY = window.scrollY || window.pageYOffset;
+
+  // Posición objetivo (un poco por encima de la sección, para no pegarla al borde)
+  const headerOffset = 90; // ajusta si tu header es más alto/bajo
+  const targetY =
+    productsSection.getBoundingClientRect().top + currentY - headerOffset;
+
+  const distance = Math.abs(targetY - currentY);
+
+  // Si casi ya estoy en el sitio (por ejemplo < 150px), no hagas nada
+  if (distance < 150) return;
+
+  window.scrollTo({
+    top: targetY,
+    behavior: 'smooth',
+  });
+}
+
+// --- Render de una página de productos ---
+function renderProductsPage() {
+  const container = document.getElementById('productContainer');
+  const totalItems = productsData.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  container.innerHTML = '';
+
+  const start = (currentPage - 1) * ITEMS_PER_PAGE;
+  const end = start + ITEMS_PER_PAGE;
+  const pageItems = productsData.slice(start, end);
+
+  if (!pageItems.length) {
+    container.innerHTML = "<p>No se encontraron productos.</p>";
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  const promises = [];
+
+  pageItems.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+
+    const nombre = item.data_name || '';
+    const precioNum = parseFloat(item.data_best_price || '0') || 0;
+    const imagen = item.data_image || '';
+    const precioTexto = `S/ ${precioNum.toFixed(2)}`;
+
+    const p = fetch(
+      `get_producto_por_nombre_precio.php?nombre=${encodeURIComponent(nombre)}&precio=${encodeURIComponent(precioNum)}`
+    )
+      .then(r => r.json())
+      .then(prod => {
+        const idp = prod.id_producto || '';
+        const isFavorite = idp && userFavSet.has(Number(idp));
+
+        card.innerHTML = `
+          <div class="product-image-wrapper">
+            <img src="${imagen}" alt="${nombre}">
+            <button 
+              class="fav-btn ${isFavorite ? 'fav-active' : ''}" 
+              data-id="${idp}"
+              aria-label="Añadir a favoritos"
+            >
+              <i class="fa-regular fa-heart icon-outline"></i>
+              <i class="fa-solid fa-heart icon-filled"></i>
+            </button>
+          </div>
+          <h3>${nombre}</h3>
+          <p class="price">${precioTexto}</p>
+          <div class="botones-producto">
+            <a href="#"
+              class="btn-comprar"
+              data-id="${idp}"
+              data-name="${nombre}"
+              data-price="${precioNum}"
+              data-image="${imagen}">
+              Comprar
+            </a>
+            <a href="#" class="btn-comparar">Comparar</a>
+          </div>
+        `;
+        container.appendChild(card);
+      })
+      .catch(err => {
+        console.error("Error obteniendo id_producto:", err);
+        card.innerHTML = `
+          <div class="product-image-wrapper">
+            <img src="${imagen}" alt="${nombre}">
+          </div>
+          <h3>${nombre}</h3>
+          <p class="price">${precioTexto}</p>
+          <div class="botones-producto">
+            <a href="#"
+              class="btn-comprar"
+              data-name="${nombre}"
+              data-price="${precioNum}"
+              data-image="${imagen}">
+              Comprar
+            </a>
+            <a href="#" class="btn-comparar">Comparar</a>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+    promises.push(p);
+  });
+
+  Promise.all(promises).then(() => {
+    attachBuyButtons();
+    attachFavLogic();
+    renderPagination(totalPages);
+    scrollToProductsTop();
+  });
+}
+
+// --- Generar botones de paginación ---
+function renderPagination(totalPages) {
+  const pag = document.getElementById('pagination');
+  pag.innerHTML = '';
+
+  if (totalPages <= 1) return;
+
+  const makeBtn = (label, page, options = {}) => {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+
+    if (options.active) btn.classList.add('active');
+    if (options.disabled) {
+      btn.disabled = true;
+      btn.classList.add('disabled');
+    } else {
+      btn.addEventListener('click', () => {
+        currentPage = page;
+        renderProductsPage();
+      });
+    }
+    pag.appendChild(btn);
+  };
+
+  makeBtn('<', currentPage - 1, { disabled: currentPage === 1 });
+  for (let p = 1; p <= totalPages; p++) {
+    makeBtn(String(p), p, { active: p === currentPage });
+  }
+  makeBtn('>', currentPage + 1, { disabled: currentPage === totalPages });
+}
+
 // --- Toast reutilizable ---
 function showToast(message) {
   const t = document.getElementById('toast');
@@ -232,9 +337,7 @@ function showToast(message) {
   }, 1800);
 }
 
-// --- Carrito en localStorage (solo para contar y guardar productos) ---
-const CART_KEY = 'afinder_cart';
-
+// --- Carrito en localStorage (usar id en vez de sku) ---
 function getCart() {
   try {
     const raw = localStorage.getItem(CART_KEY);
@@ -251,15 +354,17 @@ function saveCart(cart) {
 
 function updateCartBadge() {
   const cart = getCart();
-  const count = cart.reduce((acc, item) => acc + item.qty, 0);
+  const count = cart.reduce((acc, item) => acc + (item.qty || 1), 0);
   const badge = document.getElementById('cart-count');
   if (badge) badge.textContent = count;
 }
 
 function addToCart(product) {
   const cart = getCart();
-  const index = cart.findIndex(p => p.sku === product.sku && p.sku !== '');
-
+  let index = -1;
+  if (product.id) {
+    index = cart.findIndex(p => p.id === product.id);
+  }
   if (index >= 0) {
     cart[index].qty += 1;
   } else {
@@ -269,25 +374,73 @@ function addToCart(product) {
   showToast('Producto agregado al carrito');
 }
 
-// Al cargar la página, refrescar badge
 updateCartBadge();
 
-// Conectar botones de compra cuando los productos ya están pintados
 function attachBuyButtons() {
   document.querySelectorAll('.btn-comprar').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      const sku   = btn.dataset.sku || '';
+      const idp   = btn.dataset.id || null;
       const name  = btn.dataset.name || 'Producto';
       const price = parseFloat(btn.dataset.price || '0') || 0;
       const image = btn.dataset.image || '';
-
-      addToCart({ sku, name, price, image });
+      addToCart({ id: idp, name, price, image });
     });
   });
 }
 
+// --- Lógica de favoritos usando BD ---
+function attachFavLogic() {
+  document.querySelectorAll('.fav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idp = btn.dataset.id;
+
+      if (!idp) {
+        showToast('No se pudo identificar el producto');
+        return;
+      }
+
+      if (!USER_ID) {
+        showToast('Debes iniciar sesión para usar favoritos');
+        // si quieres, aquí puedes abrir el modal de login
+        return;
+      }
+
+      fetch("toggle_favorito.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "id_producto=" + encodeURIComponent(idp)
+      })
+      .then(r => r.json())
+      .then(res => {
+        if (res.status === "error" && res.msg === "not_logged") {
+          showToast("Debes iniciar sesión para usar favoritos");
+          return;
+        }
+
+        if (res.action === "added") {
+          btn.classList.add("fav-active");
+          userFavSet.add(Number(idp));
+          adjustFavBadge(1);              // <-- incrementa contador
+          showToast("Añadido a favoritos");
+        } else if (res.action === "removed") {
+          btn.classList.remove("fav-active");
+          userFavSet.delete(Number(idp));
+          adjustFavBadge(-1);             // <-- disminuye contador
+          showToast("Eliminado de favoritos");
+        } else {
+          showToast("No se pudo actualizar favoritos");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        showToast("Error al actualizar favoritos");
+      });
+    });
+  });
+}
 </script>
 
-</body>
-</html>
+<?php
+include 'partials/footer.php';
+?>
